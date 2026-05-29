@@ -1,0 +1,10 @@
+char        =  { ASCII_ALPHANUMERIC | "." | "/" }
+whitespaces = _{ " "+ }
+whitespaces_opt = _{ " "* }
+NAME        = @{ char+ }
+ARGUMENT    = @{ whitespaces ~ char+ }
+// Has To be trimmed
+CALL        = { NAME ~ ARGUMENT* }
+PIPE        = { CALL ~ whitespaces_opt ~ "|" }
+REDIRECTION = { CALL ~ whitespaces_opt ~ ">" }
+EXPR        = { ((PIPE | REDIRECTION | CALL) ~ whitespaces_opt)+ }
