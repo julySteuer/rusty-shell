@@ -1,8 +1,11 @@
 char        =  { ASCII_ALPHANUMERIC | "." | "/" }
 whitespaces = _{ " "+ }
 whitespaces_opt = _{ " "* }
+STRING = @{ (char|" ")* }
+STRING_WRAPPER = _{ "\"" ~ STRING ~ "\"" }
+WORD = @{ char+ }
 NAME        = @{ char+ }
-ARGUMENT    = @{ whitespaces ~ char+ }
+ARGUMENT    = { whitespaces ~ (STRING_WRAPPER|WORD) }
 // Has To be trimmed
 CALL        = { NAME ~ ARGUMENT* }
 PIPE        = { "|" ~ whitespaces_opt ~ CALL }

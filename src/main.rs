@@ -2,12 +2,12 @@ use std::error::Error;
 
 use crate::{input::TerminalInput, output::TerminalOutput};
 
-mod shell;
-mod input;
 mod executor;
+mod input;
+mod interpreter;
 mod output;
 mod parser;
-mod interpreter;
+mod shell;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let input_handler = TerminalInput::new();

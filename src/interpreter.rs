@@ -1,4 +1,9 @@
-use std::{error::Error, fmt, io::{Stdout, pipe}, process::{Child, ChildStdin, ChildStdout, Command, ExitCode, ExitStatus, Stdio}};
+use std::{
+    error::Error,
+    fmt,
+    io::{Stdout, pipe},
+    process::{Child, ChildStdin, ChildStdout, Command, ExitCode, ExitStatus, Stdio},
+};
 
 use crate::parser::{Call, Pipe, Redirect, ShellExpr};
 
@@ -6,7 +11,7 @@ use crate::parser::{Call, Pipe, Redirect, ShellExpr};
 pub enum InterperterError {
     FailedToSpawn,
     CommandWasNotRun,
-    FailedToWait
+    FailedToWait,
 }
 
 impl fmt::Display for InterperterError {
@@ -44,7 +49,12 @@ pub fn interpret_shell(shell_expr: ShellExpr) -> Result<InterpreterResult, Inter
     Ok(InterpreterResult::from_exit_code(exit_status))
 }
 
-fn interpret_shell_expr(shell_expr: ShellExpr, stdin: Stdio, stdout: Stdio) -> Result<Child, InterperterError> { // TODO: Rework this function 
+fn interpret_shell_expr(
+    shell_expr: ShellExpr,
+    stdin: Stdio,
+    stdout: Stdio,
+) -> Result<Child, InterperterError> {
+    // TODO: Rework this function
     match shell_expr {
         ShellExpr::Pipe(pipe) => interpret_pipe(pipe, stdin, stdout),
         ShellExpr::Redirect(redirect) => interpret_redirect(redirect, stdin, stdout),
@@ -64,11 +74,20 @@ fn interpret_call(call: Call, stdin: Stdio, stdout: Stdio) -> Result<Child, Inte
 
 fn interpret_pipe(pipe: Pipe, stdin: Stdio, stdout: Stdio) -> Result<Child, InterperterError> {
     let left_recursive_expr = pipe.0;
-    let left = interpret_shell_expr(*left_recursive_expr.left , stdin, Stdio::piped())?; // I think this one first
-    let right = interpret_call(left_recursive_expr.right, Stdio::from(left.stdout.unwrap()), stdout)?;
+    let left = interpret_shell_expr(*left_recursive_expr.left, stdin, Stdio::piped())?; // I think this one first
+    let right = interpret_call(
+        left_recursive_expr.right,
+        Stdio::from(left.stdout.unwrap()),
+        stdout,
+    )?;
     Ok(right)
 }
 
-fn interpret_redirect(redirect: Redirect, stdin: Stdio, stdout: Stdio) -> Result<Child, InterperterError> { // TODO: Make the right implementation here
+fn interpret_redirect(
+    redirect: Redirect,
+    stdin: Stdio,
+    stdout: Stdio,
+) -> Result<Child, InterperterError> {
+    // TODO: Make the right implementation here
     todo!()
 }

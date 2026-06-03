@@ -1,8 +1,11 @@
-use std::{fmt, io::{self, Write}};
+use std::{
+    fmt,
+    io::{self, Write},
+};
 
 #[derive(Debug)]
 pub enum OutputError {
-    CouldNotWrite
+    CouldNotWrite,
 }
 
 impl fmt::Display for OutputError {
@@ -27,7 +30,8 @@ impl TerminalOutput {
 
 impl Output for TerminalOutput {
     fn write(&self, payload: String) -> Result<(), OutputError> {
-        io::stdout().write_all(&payload.into_bytes())
+        io::stdout()
+            .write_all(&payload.into_bytes())
             .and_then(|_| io::stdout().flush())
             .map_err(|_| OutputError::CouldNotWrite)
     }

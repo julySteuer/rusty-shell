@@ -2,7 +2,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum InputError {
-    LineCouldNotBeRead
+    LineCouldNotBeRead,
 }
 
 impl fmt::Display for InputError {
