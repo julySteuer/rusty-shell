@@ -5,6 +5,6 @@ NAME        = @{ char+ }
 ARGUMENT    = @{ whitespaces ~ char+ }
 // Has To be trimmed
 CALL        = { NAME ~ ARGUMENT* }
-PIPE        = { CALL ~ whitespaces_opt ~ "|" }
-REDIRECTION = { CALL ~ whitespaces_opt ~ ">" }
+PIPE        = { "|" ~ whitespaces_opt ~ CALL }
+REDIRECTION = { ">" ~ whitespaces_opt ~ CALL }
 EXPR        = { ((PIPE | REDIRECTION | CALL) ~ whitespaces_opt)+ }

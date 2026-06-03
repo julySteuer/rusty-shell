@@ -1,6 +1,6 @@
 use std::{error::Error, fmt};
 
-use pest::{Parser, iterators::Pairs};
+use pest::{Parser, iterators::{Pair, Pairs}};
 use pest_derive::Parser;
 
 #[derive(Parser)]
@@ -21,15 +21,27 @@ pub struct Call {
 
 #[derive(Debug)]
 pub struct LeftRecursiveBlock {
-    right: Call, 
-    left: Option<Box<ShellExpr>>
+    pub right: Call, 
+    pub left: Box<ShellExpr>
+}
+
+impl LeftRecursiveBlock {
+    pub fn from_shell_expr(shell_call: Call, left: Option<ShellExpr>) -> Self {
+        Self { right: shell_call, left: Box::new(left.expect("Left Recursive branch is None")) }
+    }
 }
 
 #[derive(Debug)]
+pub struct Pipe(pub LeftRecursiveBlock);
+
+#[derive(Debug)]
+pub struct Redirect(pub LeftRecursiveBlock);
+
+#[derive(Debug)]
 pub enum ShellExpr {
-    Pipe(LeftRecursiveBlock),
-    Redirect(LeftRecursiveBlock),
-    Call(Call)
+    Pipe(Pipe),
+    Redirect(Redirect),
+    Call(Call) // Add Empty Expression (If the user just presses enter, this also removes the option in the recursive blocks)
 }
 
 impl fmt::Display for ParserError {
@@ -46,34 +58,38 @@ pub fn parse_input(input: &str) -> Result<ShellExpr, ParserError> {
         .and_then(|expr| to_tree(expr)) // Maybe to_tree -> expr_to_tree to abstract 
 }
 
-fn to_tree(expression: Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> {
-    call_to_tree(expression) // Fix this 
+fn to_tree(mut expression: Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> {
+    let mut ex = expression.next().unwrap().into_inner();
+    call_to_tree(&mut ex) 
 }
 
-fn call_to_tree(calls: Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> { // The pair here should be a EXPR 
-    calls.fold(None, |acc, expr| 
-        match expr.as_rule() {
+fn call_to_tree(calls: &mut Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> { // The pair here should be a EXPR 
+    calls.fold(None, |acc, expr| // This fold can may be started without the None. Would clean things up 
+        match expr.as_rule() { 
             Rule::CALL => {
-                let mut inner_rules = expr.into_inner();
-
-                let prog = inner_rules.next().unwrap().as_str(); // Shall never fail { NAME ~ ARGUMENT* }
-                let arguments: Vec<String> = inner_rules.map(|arg| String::from(arg.as_str())).collect(); // Have to check if he really makes name + 1 
-                let shell_call = ShellExpr::Call(Call { prog: String::from(prog) , arguments });
-                Some(shell_call)
+                let shell_call = parse_call(expr.into_inner());
+                Some(ShellExpr::Call(shell_call))
             },
-            Rule::PIPE => {
-                None
+            Rule::PIPE => { // { CALL ~ whitespaces_opt ~ "|" }
+                let mut iterator = expr.into_inner();
+                let shell_call = parse_call(iterator.next().unwrap().into_inner());
+                let pipe = ShellExpr::Pipe(Pipe(LeftRecursiveBlock::from_shell_expr(shell_call, acc)));
+                Some(pipe)
             },
-            Rule::REDIRECTION => { 
-                None
+            Rule::REDIRECTION => { // { CALL ~ whitespaces_opt ~ ">" }
+                let mut iterator = expr.into_inner();
+                let shell_call = parse_call(iterator.next().unwrap().into_inner());
+                let redirect = ShellExpr::Redirect(Redirect(LeftRecursiveBlock::from_shell_expr(shell_call, acc)));
+                Some(redirect)
             },
             _ => unreachable!()
         }
-    ).ok_or(ParserError::CouldNotParse) // Start From none
+    ).ok_or(ParserError::CouldNotParse)
 }
 
-fn parse_call(call: &mut Pairs<'_, Rule>) -> ShellExpr { // Maybe start using newtype pattern instead of Pairs 
-    let prog = call.next().unwrap().as_str(); // Shall never fail { NAME ~ ARGUMENT* }
-    let arguments: Vec<String> = call.map(|arg| String::from(arg.as_str())).collect(); // Have to check if he really makes name + 1 
-    ShellExpr::Call(Call { prog: String::from(prog) , arguments })
+// Error for mangeld arguments is in this method 
+fn parse_call(mut call: Pairs<'_, Rule>) -> Call { // Maybe start using newtype pattern instead of Pairs
+    let prog = call.next().unwrap(); // Shall never fail { NAME ~ ARGUMENT* }
+    let arguments: Vec<String> = call.map(|arg| String::from(arg.as_str().trim())).collect(); // Have to check if he really makes name + 1 
+    Call { prog: String::from(prog.as_str()), arguments }
 }

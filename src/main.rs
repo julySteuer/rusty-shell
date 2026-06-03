@@ -7,6 +7,7 @@ mod input;
 mod executor;
 mod output;
 mod parser;
+mod interpreter;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let input_handler = TerminalInput::new();
