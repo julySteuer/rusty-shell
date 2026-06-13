@@ -2,8 +2,8 @@ use std::fmt::{self, Display};
 
 use crate::{
     interpreter::{InterperterError, InterpreterResult, interpret_shell},
-    output::Output,
     parser::parse_input,
+    subprocess::ExitCode,
 };
 
 #[derive(Debug)]
@@ -20,26 +20,13 @@ impl fmt::Display for ExecutionError {
 
 impl std::error::Error for ExecutionError {}
 
-pub struct ExitCode(pub i32);
-
-impl Display for ExitCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 pub enum ExecutionResult {
     ShellStop,
     ShellRun { exit_code: ExitCode },
 }
 
 // Add Shell State Here to store stuff like pwd ad maybe
-pub fn execute_shell(
-    output_handler: &impl Output,
-    command: String,
-) -> Result<ExecutionResult, ExecutionError> {
-    output_handler
-        .write(command.clone())
-        .map_err(|_| ExecutionError::ExecutionFailed)?;
+pub fn execute_shell(command: String) -> Result<ExecutionResult, ExecutionError> {
     if command.as_str().trim() == "q" {
         return Ok(ExecutionResult::ShellStop);
     }

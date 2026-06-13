@@ -11,7 +11,7 @@ pub fn run_shell(
     loop {
         output_handler.write(">".to_owned())?;
         let line = input_handler.get_line()?; // Add a Non buffered input so if it is non buffered the command is written to stdout and ptr is moved forward 
-        let result = execute_shell(output_handler, line)?;
+        let result = execute_shell(line)?;
         match result {
             ExecutionResult::ShellStop => break,
             ExecutionResult::ShellRun { exit_code } => {

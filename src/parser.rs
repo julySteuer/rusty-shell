@@ -23,13 +23,13 @@ pub struct Call {
 }
 
 #[derive(Debug)]
-pub struct LeftRecursiveBlock {
-    pub right: Call,
+pub struct LeftRecursiveBlock<T> {
+    pub right: T,
     pub left: Box<ShellExpr>,
 }
 
-impl LeftRecursiveBlock {
-    pub fn from_shell_expr(shell_call: Call, left: Option<ShellExpr>) -> Self {
+impl<T> LeftRecursiveBlock<T> {
+    pub fn from_shell_expr(shell_call: T, left: Option<ShellExpr>) -> Self {
         Self {
             right: shell_call,
             left: Box::new(left.expect("Left Recursive branch is None")),
@@ -38,10 +38,10 @@ impl LeftRecursiveBlock {
 }
 
 #[derive(Debug)]
-pub struct Pipe(pub LeftRecursiveBlock);
+pub struct Pipe(pub LeftRecursiveBlock<Call>);
 
 #[derive(Debug)]
-pub struct Redirect(pub LeftRecursiveBlock);
+pub struct Redirect(pub LeftRecursiveBlock<String>);
 
 #[derive(Debug)]
 pub enum ShellExpr {
@@ -77,16 +77,15 @@ fn call_to_tree(calls: &mut Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> {
                 let shell_call = parse_call(expr.into_inner());
                 Some(ShellExpr::Call(shell_call))
             },
-            Rule::PIPE => { // { CALL ~ whitespaces_opt ~ "|" }
+            Rule::PIPE => {
                 let mut iterator = expr.into_inner();
                 let shell_call = parse_call(iterator.next().unwrap().into_inner());
                 let pipe = ShellExpr::Pipe(Pipe(LeftRecursiveBlock::from_shell_expr(shell_call, acc)));
                 Some(pipe)
             },
-            Rule::REDIRECTION => { // { CALL ~ whitespaces_opt ~ ">" }
-                let mut iterator = expr.into_inner();
-                let shell_call = parse_call(iterator.next().unwrap().into_inner());
-                let redirect = ShellExpr::Redirect(Redirect(LeftRecursiveBlock::from_shell_expr(shell_call, acc)));
+            Rule::REDIRECTION => {
+                let name = expr.into_inner().as_str().to_string();
+                let redirect = ShellExpr::Redirect(Redirect(LeftRecursiveBlock::from_shell_expr(name, acc)));
                 Some(redirect)
             },
             _ => unreachable!()
