@@ -1,9 +1,6 @@
 use std::{error::Error, fmt};
 
-use pest::{
-    Parser,
-    iterators::Pairs,
-};
+use pest::{Parser, iterators::Pairs};
 use pest_derive::Parser;
 
 #[derive(Parser)]
@@ -40,10 +37,10 @@ impl<T> LeftRecursiveBlock<T> {
 #[derive(Debug)]
 pub struct RightRecursiveBlock<T> {
     pub right: Box<ShellExpr>,
-    pub left: T
+    pub left: T,
 }
 
-impl <T> RightRecursiveBlock<T> {
+impl<T> RightRecursiveBlock<T> {
     pub fn from_shell_expr(left: T, right: Option<ShellExpr>) -> Self {
         Self {
             right: Box::new(right.expect("Left Recursive branch is None")),
@@ -66,7 +63,7 @@ pub enum ShellExpr {
     Pipe(Pipe),
     Redirect(Redirect),
     Call(Call), // Add Empty Expression (If the user just presses enter, this also removes the option in the recursive blocks)
-    Back(Back)
+    Back(Back),
 }
 
 impl fmt::Display for ParserError {
