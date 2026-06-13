@@ -1,4 +1,4 @@
-use std::fmt::{self, Display};
+use std::fmt::{self};
 
 use crate::{
     interpreter::{InterperterError, InterpreterResult, interpret_shell},

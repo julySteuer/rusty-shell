@@ -9,4 +9,5 @@ ARGUMENT        =  { whitespaces ~ (STRING_WRAPPER | WORD) }
 CALL            =  { NAME ~ ARGUMENT* }
 PIPE            =  { "|" ~ whitespaces_opt ~ CALL }
 REDIRECTION     =  { ">" ~ whitespaces_opt ~ WORD }
-EXPR            =  { ((PIPE | REDIRECTION | CALL) ~ whitespaces_opt)+ }
+BACK            =  { "<" ~ whitespaces_opt ~ WORD }
+EXPR            =  { CALL ~ (whitespaces_opt ~ (PIPE | REDIRECTION | CALL | BACK))* }

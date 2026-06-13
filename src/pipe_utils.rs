@@ -15,6 +15,9 @@ pub fn dup_stdout_to_write() -> PipeWriter {
 }
 
 pub fn file_pipe_writer(name: &str) -> io::Result<PipeWriter> {
-    let file = File::create(name)?;
-    Ok(PipeWriter::from(file.as_fd().try_clone_to_owned().unwrap()))
+    File::create(name).map(|file| PipeWriter::from(file.as_fd().try_clone_to_owned().unwrap()))
+}
+
+pub fn file_pipe_reader(name: &str) -> io::Result<PipeReader> {
+    File::open(name).map(|file| PipeReader::from(file.as_fd().try_clone_to_owned().unwrap()))
 }

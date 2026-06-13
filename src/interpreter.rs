@@ -1,17 +1,14 @@
 use std::{
-    clone,
     error::Error,
     fmt,
-    fs::{self, File},
-    io::{self, PipeReader, PipeWriter, Read, Write, pipe},
-    os::fd::{AsFd, AsRawFd, FromRawFd},
-    process::{Child, Command, ExitStatus, Stdio},
+    io::{PipeReader, PipeWriter, Write, pipe},
+    process::Command,
 };
 
 use crate::{
     buildin::BuildInCommand,
-    parser::{Call, Pipe, Redirect, ShellExpr},
-    pipe_utils::{dup_stdin_to_read, dup_stdout_to_write, file_pipe_writer},
+    parser::{Back, Call, Pipe, Redirect, ShellExpr},
+    pipe_utils::{dup_stdin_to_read, dup_stdout_to_write, file_pipe_reader, file_pipe_writer},
     subprocess::{BuildInProcess, ExitCode, Process},
 };
 
@@ -20,13 +17,8 @@ use crate::{
 #[derive(Debug)]
 pub enum InterperterError {
     FailedToSpawn,
-    CouldNotWriteToFile,
-    CommandWasNotRun,
-    FailedToWait,
     CouldNotPipe,
-    CouldNotCopyPipe,
-    CouldNotBuffer,
-    CouldNotWrite,
+    CouldNotWrite
 }
 
 impl fmt::Display for InterperterError {
@@ -69,11 +61,11 @@ fn interpret_shell_expr(
     stdin: PipeReader,
     stdout: PipeWriter,
 ) -> Result<Process, InterperterError> {
-    // TODO: Rework this function
     match shell_expr {
         ShellExpr::Pipe(pipe) => interpret_pipe(pipe, stdin, stdout),
         ShellExpr::Redirect(redirect) => interpret_redirect(redirect, stdin, stdout),
         ShellExpr::Call(call) => interpret_call(call, stdin, stdout),
+        ShellExpr::Back(back) => interpret_back(back, stdout),
     }
 }
 
@@ -139,6 +131,19 @@ fn interpret_redirect(
         .map_err(|_| InterperterError::CouldNotWrite)?; // Make this not buffered maybe
     Ok(Process::BuildIn(BuildInProcess {
         stdout: Some(file_name),
+        status: ExitCode(0),
+    }))
+}
+
+fn interpret_back(back: Back, stdout: PipeWriter) -> Result<Process, InterperterError> {
+    let right_recurisve_expr = back.0;
+    let file_name = right_recurisve_expr.left;
+    let pipe_reader = file_pipe_reader(&file_name).map_err(|_| InterperterError::CouldNotPipe)?;
+    let left = interpret_shell_expr(*right_recurisve_expr.right, pipe_reader, stdout)?;
+    left.wait(); // Maybe look at auto / late reaping 
+
+    Ok(Process::BuildIn(BuildInProcess { // Have a Vec<Process> and then call wait on every one once that shell expr is evaluated
+        stdout: None,
         status: ExitCode(0),
     }))
 }

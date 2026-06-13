@@ -2,7 +2,7 @@ use std::{env, error::Error, fmt};
 
 use crate::{parser::Call, subprocess::BuildInProcess, subprocess::ExitCode};
 
-// TODO: Maybe here BuildInCommands and BuildInOperations (For things like > >> and maybe addition)
+// TODO: Maybe here BuildInCommands and BuildInOperations (For things like maybe addition)
 #[derive(Debug)]
 pub enum BuildInErrors {
     CdFailed,

@@ -2,7 +2,7 @@ use std::{error::Error, fmt};
 
 use pest::{
     Parser,
-    iterators::{Pair, Pairs},
+    iterators::Pairs,
 };
 use pest_derive::Parser;
 
@@ -38,6 +38,24 @@ impl<T> LeftRecursiveBlock<T> {
 }
 
 #[derive(Debug)]
+pub struct RightRecursiveBlock<T> {
+    pub right: Box<ShellExpr>,
+    pub left: T
+}
+
+impl <T> RightRecursiveBlock<T> {
+    pub fn from_shell_expr(left: T, right: Option<ShellExpr>) -> Self {
+        Self {
+            right: Box::new(right.expect("Left Recursive branch is None")),
+            left: left,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Back(pub RightRecursiveBlock<String>);
+
+#[derive(Debug)]
 pub struct Pipe(pub LeftRecursiveBlock<Call>);
 
 #[derive(Debug)]
@@ -48,6 +66,7 @@ pub enum ShellExpr {
     Pipe(Pipe),
     Redirect(Redirect),
     Call(Call), // Add Empty Expression (If the user just presses enter, this also removes the option in the recursive blocks)
+    Back(Back)
 }
 
 impl fmt::Display for ParserError {
@@ -88,6 +107,11 @@ fn call_to_tree(calls: &mut Pairs<'_, Rule>) -> Result<ShellExpr, ParserError> {
                 let redirect = ShellExpr::Redirect(Redirect(LeftRecursiveBlock::from_shell_expr(name, acc)));
                 Some(redirect)
             },
+            Rule::BACK => {
+                let name = expr.into_inner().as_str().to_string();
+                let back = ShellExpr::Back(Back(RightRecursiveBlock::from_shell_expr(name, acc)));
+                Some(back)
+            }
             _ => unreachable!()
         }
     ).ok_or(ParserError::CouldNotParse)
