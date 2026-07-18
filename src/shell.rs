@@ -1,9 +1,10 @@
 use crate::{
-    executor::{ExecutionResult, execute_shell}, io::IoProvider
+    executor::{ExecutionResult, execute_shell},
+    io::IoProvider,
 };
 
 pub fn run_shell<Provider: IoProvider>(
-    mut io_provider: Provider
+    mut io_provider: Provider,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         io_provider.write(">".to_owned())?; // Global state so PWD can be read and stuff. Maybe a context pipeline 
@@ -11,7 +12,9 @@ pub fn run_shell<Provider: IoProvider>(
         let result = execute_shell(line)?;
         match result {
             ExecutionResult::ShellStop => break,
-            ExecutionResult::ShellRun { exit_code } => io_provider.write_line(format!("Program Finished with code: {}", exit_code))?,
+            ExecutionResult::ShellRun { exit_code } => {
+                io_provider.write_line(format!("Program Finished with code: {}", exit_code))?
+            }
             ExecutionResult::Empty => io_provider.write("".to_string())?,
         }
     }

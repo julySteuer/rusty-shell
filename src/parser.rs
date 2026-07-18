@@ -44,7 +44,7 @@ impl<T> RightRecursiveBlock<T> {
     pub fn from_shell_expr(left: T, right: Option<ShellExpr>) -> Self {
         Self {
             right: Box::new(right.expect("Left Recursive branch is None")),
-            left: left,
+            left,
         }
     }
 }

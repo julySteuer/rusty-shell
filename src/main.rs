@@ -1,6 +1,6 @@
-use std::{error::Error};
+use std::error::Error;
 
-use crate::{io::RawIoProvider};
+use crate::io::RawIoProvider;
 
 mod buildin;
 mod executor;
@@ -13,6 +13,6 @@ mod subprocess;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut io_provider = RawIoProvider::new()?;
-    io_provider.init_sceen();
+    io_provider.init_sceen()?;
     shell::run_shell(io_provider)
 }

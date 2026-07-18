@@ -1,6 +1,15 @@
-use std::{fmt::{self, Display, Formatter, format}, io::{self, Read, Stdin, Stdout, Write, stdin, stdout}};
+use std::{
+    fmt::{self, Display, Formatter},
+    io::{self, Stdout, Write, stdin, stdout},
+};
 
-use termion::{clear, cursor::{Goto, Left, Right}, event::Key, input::TermRead, raw::{IntoRawMode, RawTerminal}};
+use termion::{
+    clear,
+    cursor::{Goto, Left, Right},
+    event::Key,
+    input::TermRead,
+    raw::{IntoRawMode, RawTerminal},
+};
 
 fn remove_from_string_with_index(str: &mut String, idx: usize) {
     if idx >= str.chars().count() {
@@ -33,7 +42,7 @@ pub trait IoProvider {
 }
 
 pub struct RawIoProvider {
-    stdout: RawTerminal<Stdout>
+    stdout: RawTerminal<Stdout>,
 }
 
 impl RawIoProvider {
@@ -44,7 +53,7 @@ impl RawIoProvider {
     }
 
     pub fn init_sceen(&mut self) -> io::Result<()> {
-        write!(self.stdout, "{} {}", clear::All, Goto(1,1))
+        write!(self.stdout, "{} {}", clear::All, Goto(1, 1))
     }
 
     fn cursor_left(&mut self) -> Result<(), IoProviderError> {
@@ -64,7 +73,7 @@ impl IoProvider for RawIoProvider {
     fn get_line(&mut self) -> Result<String, IoProviderError> {
         let mut current_line = String::new();
         let mut cursor = 0;
-        
+
         for c in stdin().keys() {
             match c.unwrap() {
                 Key::Char('\n') => {
@@ -74,14 +83,14 @@ impl IoProvider for RawIoProvider {
                 Key::Left => {
                     self.cursor_left()?;
                     cursor -= 1;
-                },
+                }
                 Key::Right => {
                     if cursor == current_line.chars().count() {
                         continue;
                     }
                     self.cursor_right()?;
                     cursor += 1;
-                },
+                }
                 Key::Backspace => {
                     if cursor == 0 {
                         continue;
@@ -90,11 +99,11 @@ impl IoProvider for RawIoProvider {
                     cursor -= 1;
                     remove_from_string_with_index(&mut current_line, cursor);
                     self.write(format!("{}", clear::AfterCursor))?;
-                    self.write(format!("{}", current_line[cursor..].to_string()))?;
+                    self.write((&current_line[cursor..]).to_string())?;
                     if cursor != current_line.chars().count() {
                         self.cursor_left()?;
                     }
-                },
+                }
                 Key::Char(ch) => {
                     self.write(ch.to_string())?;
                     current_line.push(ch);
@@ -106,13 +115,14 @@ impl IoProvider for RawIoProvider {
 
         Ok(current_line)
     }
-    
+
     fn write(&mut self, payload: String) -> Result<(), IoProviderError> {
-        self.stdout.write(payload.as_bytes())
+        self.stdout
+            .write(payload.as_bytes())
             .and(self.stdout.flush())
             .map_err(|_| IoProviderError::ErrorWhilePrinting)
     }
-    
+
     fn write_line(&mut self, payload: String) -> Result<(), IoProviderError> {
         self.write(format!("\r{}\n\r", payload))
     }

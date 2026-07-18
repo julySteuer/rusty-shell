@@ -55,7 +55,7 @@ pub fn interpret_shell(shell_expr: ShellExpr) -> Result<InterpreterResult, Inter
     let proc = interpret_shell_expr(shell_expr, dup_stdin_to_read(), dup_stdout_to_write())?;
     let exit_status = proc.reap();
     exit_status
-        .map(|status| InterpreterResult::from_exit_code(status))
+        .map(InterpreterResult::from_exit_code)
         .ok_or(InterperterError::CouldNotReap)
 }
 
@@ -67,7 +67,7 @@ fn interpret_shell_expr(
     match shell_expr {
         ShellExpr::Pipe(pipe) => interpret_pipe(pipe, stdin, stdout),
         ShellExpr::Redirect(redirect) => interpret_redirect(redirect, stdin, stdout),
-        ShellExpr::Call(call) => interpret_call(call, stdin, stdout).map(|proc| ProcList::new(proc)),
+        ShellExpr::Call(call) => interpret_call(call, stdin, stdout).map(ProcList::new),
         ShellExpr::Back(back) => interpret_back(back, stdout),
     }
 }
@@ -129,7 +129,7 @@ fn interpret_redirect(
     let left = interpret_shell_expr(*left_recursive_expr.left, stdin, pipe_writer)?;
 
     stdout
-        .write_all(&file_name.as_bytes())
+        .write_all(file_name.as_bytes())
         .map_err(|_| InterperterError::CouldNotWrite)?; // Make this not buffered maybe
     Ok(left.append(Process::BuildIn(BuildInProcess {
         stdout: Some(file_name),

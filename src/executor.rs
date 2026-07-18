@@ -23,7 +23,7 @@ impl std::error::Error for ExecutionError {}
 pub enum ExecutionResult {
     ShellStop,
     ShellRun { exit_code: ExitCode },
-    Empty
+    Empty,
 }
 
 // Add Shell State Here to store stuff like pwd ad maybe
