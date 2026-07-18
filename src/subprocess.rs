@@ -76,7 +76,6 @@ impl ProcList {
     }
 
     pub fn reap(self) -> Option<ExitCode> {
-        dbg!(&self);
         // Returns the last exit code
         self.0.into_iter().fold(None, |_, p| Some(p.wait()))
     }

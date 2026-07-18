@@ -67,7 +67,7 @@ fn interpret_shell_expr(
     match shell_expr {
         ShellExpr::Pipe(pipe) => interpret_pipe(pipe, stdin, stdout),
         ShellExpr::Redirect(redirect) => interpret_redirect(redirect, stdin, stdout),
-        ShellExpr::Call(call) => interpret_call(call, stdin, stdout),
+        ShellExpr::Call(call) => interpret_call(call, stdin, stdout).map(|proc| ProcList::new(proc)),
         ShellExpr::Back(back) => interpret_back(back, stdout),
     }
 }
@@ -91,10 +91,10 @@ fn interpret_call(
     call: Call,
     stdin: PipeReader,
     stdout: PipeWriter,
-) -> Result<ProcList, InterperterError> {
+) -> Result<Process, InterperterError> {
     if let Some(buildin) = BuildInCommand::build_from_call(&call) {
         let build_in_process = interpret_buildin_call(buildin, stdout)?;
-        return Ok(ProcList::new(Process::BuildIn(build_in_process)));
+        return Ok(Process::BuildIn(build_in_process));
     }
     let command = Command::new(call.prog)
         .args(call.arguments)
@@ -102,7 +102,7 @@ fn interpret_call(
         .stdout(stdout)
         .spawn();
     let child = command.map_err(|_| InterperterError::FailedToSpawn)?;
-    Ok(ProcList::new(Process::External(child)))
+    Ok(Process::External(child))
 }
 
 fn interpret_pipe(
@@ -114,7 +114,7 @@ fn interpret_pipe(
     let (pipe_reader, pipe_writer) = pipe().map_err(|_| InterperterError::CouldNotPipe)?;
     let left = interpret_shell_expr(*left_recursive_expr.left, stdin, pipe_writer)?; // I think this one first
     let right = interpret_call(left_recursive_expr.right, pipe_reader, stdout)?;
-    Ok(right.concat(left)) // This might need to be switched
+    Ok(left.append(right)) // This might need to be switched
 }
 
 fn interpret_redirect(
