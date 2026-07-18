@@ -23,12 +23,16 @@ impl std::error::Error for ExecutionError {}
 pub enum ExecutionResult {
     ShellStop,
     ShellRun { exit_code: ExitCode },
+    Empty
 }
 
 // Add Shell State Here to store stuff like pwd ad maybe
 pub fn execute_shell(command: String) -> Result<ExecutionResult, ExecutionError> {
     if command.as_str().trim() == "q" {
         return Ok(ExecutionResult::ShellStop);
+    }
+    if command.is_empty() {
+        return Ok(ExecutionResult::Empty);
     }
     let shell_expr = parse_input(&command).map_err(|_| ExecutionError::ParsingFailed)?;
     let result = interpret_shell(shell_expr); // Map the whole result
